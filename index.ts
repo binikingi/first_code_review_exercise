@@ -1,4 +1,4 @@
-import rl from "readline";
+import * as rl from "readline";
 const readline = rl.createInterface({
     input: process.stdin,
     output: process.stdout
@@ -35,6 +35,20 @@ async function main() {
             a) print the formula
             b) change some cells
         `);
+        switch (input.charAt(0)) {
+            case "a": {
+                console.log("a");
+                // printForula();
+                break;
+            }
+            case "b": {
+                // formula = changeFormula(formula, input);
+                console.log("b");
+                break;
+            }
+            default:
+                console.log("Invalid input");
+        }
     }
 }
 
