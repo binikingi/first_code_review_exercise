@@ -1,3 +1,4 @@
+import { readFileSync } from "fs";
 import * as rl from "readline";
 const readline = rl.createInterface({
     input: process.stdin,
@@ -14,36 +15,85 @@ const getInput = (text: string): Promise<string> => {
 }
 
 async function getFileContentByArgs() {
-    return "2,5,=4*{1}";
-    // const filename = process.argv[2];
-    // if (!Boolean(filename) && typeof filename !== "string") {
-    //     process.exit(1);
-    // }
-    // try {
-    //     return readFileSync(filename);
-    // } catch (error) {
-    //     console.error(error);
-    //     process.exit(1);
-    // }
+    const filename = process.argv[2];
+    if (!Boolean(filename) && typeof filename !== "string") {
+        process.exit(1);
+    }
+    try {
+        return readFileSync(filename).toString();
+    } catch (error) {
+        console.error(error);
+        process.exit(1);
+    }
+}
+
+function calculateExpression(expression: string, formulaCells: string[], otherValues: number[]): number {
+    let finalExpression = "";
+    const splittedExpression = expression.split("");
+    for (let i = 0; i < splittedExpression.length; i++) {
+        const char = splittedExpression[i];
+        if (["+", "-", "*", "/"].includes(char)) {
+            finalExpression += char;
+        } else if (char === "{") {
+            const cellNumber = parseInt(splittedExpression[i + 1], 10);
+            if (otherValues[cellNumber] !== undefined) {
+                finalExpression += otherValues[cellNumber];
+            } else {
+                finalExpression += calculateCell(formulaCells[cellNumber], formulaCells, otherValues);
+            }
+            i += 2;
+        } else {
+            finalExpression += parseFloat(char); 
+        }
+    }
+    return new Function('return ' + finalExpression)();
+}
+
+function calculateCell(cellValue: string, formulaCells: string[], otherValues: number[]): number {
+    if (cellValue.charAt(0) === "=") {
+        const expression = cellValue.slice(1);
+        return calculateExpression(expression, formulaCells, otherValues)
+    } else {
+        return parseFloat(cellValue);
+    }
+}
+
+function splitFormula(formula: string): string[] {
+    return formula.replace(/ /g, "").split(",");
+}
+
+function printForula(formula: string) {
+    let finalString = "";
+    const formulaCells = splitFormula(formula);
+    const values: number[] = [];
+    formulaCells.forEach((cell, idx) => {
+        finalString += `[${idx}: ${calculateCell(cell, formulaCells, values)}], `;
+    });
+    console.log(finalString.slice(0, finalString.length-2));
+}
+
+function changeFormula(formula: string, changeInput: string): string {
+    const formulaCells = splitFormula(formula);
+    const args = changeInput.split(" ").slice(1);
+    const cellNumber = parseFloat(args[0]);
+    const newValue = args[1];
+    formulaCells[cellNumber] = newValue;
+    return formulaCells.join(",");
 }
 
 async function main() {
-    const formula = await getFileContentByArgs();
+    let formula = await getFileContentByArgs();
     while (true) {
-        const input = await getInput(`
-            choose what to do?
-            a) print the formula
-            b) change some cells
-        `);
+        const input = await getInput(`choose what to do?\na) print the formula\nb) change some cells`);
         switch (input.charAt(0)) {
             case "a": {
-                console.log("a");
-                // printForula();
+                console.log(`\n${formula}`)
+                printForula(formula);
+                console.log(`\n`)
                 break;
             }
             case "b": {
-                // formula = changeFormula(formula, input);
-                console.log("b");
+                formula = changeFormula(formula, input);
                 break;
             }
             default:
