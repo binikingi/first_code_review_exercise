@@ -5,7 +5,6 @@ const readline = rl.createInterface({
     output: process.stdout
 });
 
-
 const getInput = (text: string): Promise<string> => {
     return new Promise<string>((resolve) => {
         readline.question(text + "\n", name => {
@@ -32,7 +31,7 @@ function calculateExpression(expression: string, formulaCells: string[], otherVa
     const splittedExpression = expression.split("");
     for (let i = 0; i < splittedExpression.length; i++) {
         const char = splittedExpression[i];
-        if (["+", "-", "*", "/"].includes(char)) {
+        if (["+", "-", "*", "/", "(", ")"].includes(char)) {
             finalExpression += char;
         } else if (char === "{") {
             const cellNumber = parseInt(splittedExpression[i + 1], 10);
@@ -62,14 +61,14 @@ function splitFormula(formula: string): string[] {
     return formula.replace(/ /g, "").split(",");
 }
 
-function printForula(formula: string) {
+function parseFormula(formula: string): string {
     let finalString = "";
     const formulaCells = splitFormula(formula);
     const values: number[] = [];
     formulaCells.forEach((cell, idx) => {
         finalString += `[${idx}: ${calculateCell(cell, formulaCells, values)}], `;
     });
-    console.log(finalString.slice(0, finalString.length-2));
+    return finalString.slice(0, finalString.length-2);
 }
 
 function changeFormula(formula: string, changeInput: string): string {
@@ -78,22 +77,23 @@ function changeFormula(formula: string, changeInput: string): string {
     const cellNumber = parseFloat(args[0]);
     const newValue = args[1];
     formulaCells[cellNumber] = newValue;
+    console.log(`Cell #${cellNumber} changed to ${newValue}`);
     return formulaCells.join(",");
 }
 
 async function main() {
     let formula = await getFileContentByArgs();
+    let parsedFormulaText = parseFormula(formula);
     while (true) {
         const input = await getInput(`choose what to do?\na) print the formula\nb) change some cells`);
         switch (input.charAt(0)) {
             case "a": {
-                console.log(`\n${formula}`)
-                printForula(formula);
-                console.log(`\n`)
+                console.log(parsedFormulaText);
                 break;
             }
             case "b": {
                 formula = changeFormula(formula, input);
+                parsedFormulaText = parseFormula(formula);
                 break;
             }
             default:
